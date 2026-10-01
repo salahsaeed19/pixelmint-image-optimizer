@@ -1,0 +1,8 @@
+{# Shared reduction badge. Expects `record`. #}
+{% if record.is_larger %}
+  <span class="badge badge-warn" title="The optimized file is larger than the original">+{{ record.reduction_percent_abs|floatformat:1 }}% larger</span>
+{% elif record.saved_bytes == 0 %}
+  <span class="badge badge-neutral">No change</span>
+{% else %}
+  <span class="badge badge-good">−{{ record.reduction_percent_abs|floatformat:1 }}%</span>
+{% endif %}

@@ -1,0 +1,101 @@
+{% extends "optimizer/base.html" %}
+{% load static %}
+{% block title %}Optimize images{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <h1>Make your images lighter.</h1>
+  <p>Compress, resize and convert JPG, PNG and WebP images. Up to {{ max_files }} images per batch, {{ max_file_mb }} MB each.</p>
+</section>
+
+<form id="optimize-form" class="optimizer" method="post" enctype="multipart/form-data" novalidate
+      data-max-files="{{ max_files }}" data-max-bytes="{{ max_file_bytes }}">
+  {% csrf_token %}
+
+  {% if form.non_field_errors %}
+    <div class="alert alert-error">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <div class="card">
+    <div id="dropzone" class="dropzone {% if form.images.errors %}has-error{% endif %}" tabindex="0" role="button"
+         aria-label="Choose images or drop them here">
+      <svg class="dz-icon" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4m0 0l-4 4m4-4l4 4"/><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+      <p class="dz-title"><strong>Drag &amp; drop images here</strong> or <span class="link">browse files</span></p>
+      <p class="dz-hint">JPG, PNG or WebP · max {{ max_file_mb }} MB each · up to {{ max_files }} images</p>
+      <input id="file-input" type="file" name="images" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" multiple>
+    </div>
+
+    <ul id="client-errors" class="error-list" aria-live="polite" hidden></ul>
+    {% if form.images.errors %}
+      <ul class="error-list">{% for error in form.images.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+    {% endif %}
+
+    <div id="selection" class="selection" hidden>
+      <div class="selection-head">
+        <span id="selection-summary"></span>
+        <button type="button" id="clear-all" class="btn btn-ghost btn-sm">Clear all</button>
+      </div>
+      <ul id="previews" class="previews"></ul>
+    </div>
+  </div>
+
+  <div class="card settings">
+    <h2>Optimization settings</h2>
+
+    <div class="field">
+      <div class="field-row">
+        <label for="id_quality">Quality</label>
+        <output id="quality-value" for="id_quality" class="quality-value">{{ form.quality.value|default:default_quality }}</output>
+      </div>
+      <input type="range" id="id_quality" name="quality" min="10" max="100" step="1" value="{{ form.quality.value|default:default_quality }}">
+      <div class="range-scale"><span>10 · smallest</span><span>100 · best</span></div>
+      <p id="quality-note" class="hint" hidden>PNG is lossless, so quality doesn't change PNG output. Choose JPG or WebP for stronger compression.</p>
+      {% for error in form.quality.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label for="id_output_format">Output format</label>
+        <select id="id_output_format" name="output_format">
+          {% for value, label in form.fields.output_format.choices %}
+            <option value="{{ value }}" {% if form.output_format.value == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <p id="jpg-note" class="hint" hidden>Transparent areas become white when saving as JPG.</p>
+      </div>
+
+      <div class="field">
+        <span class="label">Resize <span class="muted">(optional)</span></span>
+        <div class="size-inputs">
+          <div>
+            <input type="number" id="id_width" name="width" min="1" max="20000" inputmode="numeric" placeholder="Width" aria-label="Width in pixels" value="{{ form.width.value|default_if_none:'' }}">
+          </div>
+          <span class="times" aria-hidden="true">×</span>
+          <div>
+            <input type="number" id="id_height" name="height" min="1" max="20000" inputmode="numeric" placeholder="Height" aria-label="Height in pixels" value="{{ form.height.value|default_if_none:'' }}">
+          </div>
+          <span class="unit">px</span>
+        </div>
+        {% for error in form.width.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+        {% for error in form.height.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+        <label class="check">
+          <input type="checkbox" name="preserve_aspect_ratio" id="id_preserve" {% if form.preserve_aspect_ratio.value %}checked{% endif %}>
+          <span>Preserve aspect ratio</span>
+        </label>
+        <p class="hint">Leave empty to keep the original size. Images are never enlarged.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button type="submit" id="submit-btn" class="btn btn-primary btn-lg" disabled>
+      <span class="spinner" aria-hidden="true"></span>
+      <span id="submit-label">Optimize images</span>
+    </button>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'optimizer/app.js' %}" defer></script>
+{% endblock %}

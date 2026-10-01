@@ -1,0 +1,72 @@
+{% extends "optimizer/base.html" %}
+{% block title %}History{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div>
+    <h1>History</h1>
+    <p class="muted">{{ page.paginator.count }} optimization{{ page.paginator.count|pluralize }}, newest first.</p>
+  </div>
+  <div class="head-actions">
+    <a class="btn btn-primary" href="{% url 'optimizer:home' %}">Optimize images</a>
+  </div>
+</section>
+
+{% if page.object_list %}
+<div class="card table-card">
+  <div class="table-wrap">
+    <table class="history-table">
+      <thead>
+        <tr>
+          <th>Image</th>
+          <th>Format</th>
+          <th>Dimensions</th>
+          <th>Size</th>
+          <th>Result</th>
+          <th>Quality</th>
+          <th>Date</th>
+          <th><span class="sr-only">Download</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for record in page.object_list %}
+        <tr>
+          <td data-label="Image">
+            <div class="cell-image">
+              <img src="{{ record.optimized_file.url }}" alt="" loading="lazy">
+              <span class="name" title="{{ record.original_filename }}">{{ record.original_filename }}</span>
+            </div>
+          </td>
+          <td data-label="Format">{{ record.get_original_format_display }} → {{ record.get_output_format_display }}</td>
+          <td data-label="Dimensions">{{ record.original_width }}×{{ record.original_height }}{% if record.was_resized %} → {{ record.output_width }}×{{ record.output_height }}{% endif %}</td>
+          <td data-label="Size">{{ record.original_size|filesizeformat }} → {{ record.optimized_size|filesizeformat }}</td>
+          <td data-label="Result">
+            {% include "optimizer/_stats.html" %}
+            <span class="sub">{% if record.is_larger %}+{% elif record.saved_bytes > 0 %}−{% endif %}{{ record.saved_bytes_abs|filesizeformat }}</span>
+          </td>
+          <td data-label="Quality">{{ record.quality }}</td>
+          <td data-label="Date"><time datetime="{{ record.created_at|date:'c' }}">{{ record.created_at|date:"M j, Y H:i" }}</time></td>
+          <td class="cell-action"><a class="btn btn-secondary btn-sm" href="{% url 'optimizer:download' record.pk %}">Download</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if page.has_other_pages %}
+<nav class="pagination" aria-label="History pages">
+  {% if page.has_previous %}<a class="btn btn-secondary btn-sm" href="?page={{ page.previous_page_number }}">← Newer</a>{% else %}<span></span>{% endif %}
+  <span class="muted">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+  {% if page.has_next %}<a class="btn btn-secondary btn-sm" href="?page={{ page.next_page_number }}">Older →</a>{% else %}<span></span>{% endif %}
+</nav>
+{% endif %}
+
+{% else %}
+<div class="card empty">
+  <h2>No history yet</h2>
+  <p class="muted">Images you optimize will show up here.</p>
+  <a class="btn btn-primary" href="{% url 'optimizer:home' %}">Optimize your first image</a>
+</div>
+{% endif %}
+{% endblock %}

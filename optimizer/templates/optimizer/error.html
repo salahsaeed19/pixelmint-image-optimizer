@@ -1,0 +1,11 @@
+{% extends "optimizer/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="card empty">
+  <p class="error-code">{{ status }}</p>
+  <h1>{{ title }}</h1>
+  <p class="muted">{{ message }}</p>
+  <a class="btn btn-primary" href="{% url 'optimizer:home' %}">Back to home</a>
+</div>
+{% endblock %}
