@@ -13,17 +13,22 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # Local development defaults. Override through environment variables if needed.
-SECRET_KEY = os.environ.get(
-    'DJANGO_SECRET_KEY',
-    'django-insecure-bf7u30#0k(*5iz)#%lod1o*#@11d(wj$21j%b7e52hycz%mv4g',
-)
-
 DEBUG = os.environ.get('DJANGO_DEBUG', '1').lower() in {'1', 'true', 'yes', 'on'}
+
+# A real key is required whenever DEBUG is off; the placeholder below is only
+# accepted for local development and must never be used in production.
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '')
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured('Set DJANGO_SECRET_KEY when DJANGO_DEBUG is off.')
+    SECRET_KEY = 'django-insecure-local-development-only-key'
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '[::1]']
 
@@ -128,7 +133,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# Image Optimizer limits ------------------------------------------------------
+# PixelMint limits ------------------------------------------------------
 OPTIMIZER_MAX_FILE_SIZE = 15 * 1024 * 1024  # 15 MB per image
 OPTIMIZER_MAX_FILES = 10  # images per batch
 OPTIMIZER_MAX_PIXELS = 60_000_000  # reject decompression-bomb style images
