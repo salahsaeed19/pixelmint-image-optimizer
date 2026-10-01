@@ -1,101 +1,226 @@
 {% extends "optimizer/base.html" %}
 {% load static %}
-{% block title %}Optimize images{% endblock %}
+{% block title %}Clean images. Smaller files.{% endblock %}
 
 {% block content %}
-<section class="hero">
-  <h1>Make your images lighter.</h1>
-  <p>Compress, resize and convert JPG, PNG and WebP images. Up to {{ max_files }} images per batch, {{ max_file_mb }} MB each.</p>
+{# ---------- Hero ---------- #}
+<div class="container">
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-copy">
+      <p class="eyebrow rise rise-1">Lighter images. Brighter webs.</p>
+      <h1 id="hero-title" class="rise rise-2">Clean images.<br><em>Smaller files.</em></h1>
+      <p class="hero-lead rise rise-3">PixelMint optimizes your images for the web while preserving visual quality. Compress, resize and convert JPG, PNG and WebP in a few calm clicks.</p>
+      <div class="hero-actions rise rise-4">
+        <a class="btn btn-primary btn-lg" href="#tool">Optimize images <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+        <a class="btn btn-secondary btn-lg" href="#how-it-works">How it works</a>
+      </div>
+      <p class="hero-meta rise rise-4"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg> JPG, PNG &amp; WebP · up to {{ max_files }} images · {{ max_file_mb }} MB each</p>
+    </div>
+
+    {# Decorative before/after composition (static demo files, see tools/generate_demo_assets.py) #}
+    <div class="hero-visual" aria-hidden="true">
+      <span class="hv-blob a"></span>
+      <span class="hv-blob b"></span>
+      <div class="hv-card ghost g1"><img src="{% static 'optimizer/img/ghost-dusk.jpg' %}" alt="" width="720" height="480"></div>
+      <div class="hv-card ghost g2"><img src="{% static 'optimizer/img/ghost-meadow.jpg' %}" alt="" width="720" height="480"></div>
+      <div class="hv-card main">
+        <img src="{% static 'optimizer/img/landscape-original.jpg' %}" alt="" width="1400" height="900">
+        <span class="hv-pill">966 KB</span>
+      </div>
+      <svg class="hv-arrow" viewBox="0 0 120 110" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+        <path class="line" d="M6 8C60 4 98 30 100 90"/>
+        <path d="M84 76l16 16 16-16"/>
+      </svg>
+      <div class="hv-card small">
+        <img src="{% static 'optimizer/img/landscape-optimized.webp' %}" alt="" width="1400" height="900">
+        <span class="hv-pill mint">191 KB</span>
+      </div>
+      <svg class="icon hv-leaf l1"><use href="#i-leaf"/></svg>
+      <svg class="icon hv-leaf l2"><use href="#i-leaf"/></svg>
+      <svg class="icon hv-leaf l3"><use href="#i-leaf"/></svg>
+    </div>
+  </section>
+</div>
+
+{# ---------- Tool ---------- #}
+<section class="tool" id="tool" aria-labelledby="tool-title">
+  <div class="container">
+    <form id="optimize-form" class="optimizer" method="post" enctype="multipart/form-data" novalidate
+          data-max-files="{{ max_files }}" data-max-bytes="{{ max_file_bytes }}">
+      {% csrf_token %}
+      <div class="card tool-card">
+        <div class="tool-head">
+          <div>
+            <p class="eyebrow">The tool</p>
+            <h2 id="tool-title">Optimize your images</h2>
+          </div>
+          <p>Choose your settings, drop in your files and PixelMint does the rest.</p>
+        </div>
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-error" style="margin-bottom:20px">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="tool-grid">
+          <div class="tool-left">
+            <div id="dropzone" class="dropzone {% if form.images.errors %}has-error{% endif %}" tabindex="0" role="button"
+                 aria-label="Choose images or drop them here">
+              <span class="dz-icon" aria-hidden="true"><svg class="icon"><use href="#i-upload"/></svg></span>
+              <p class="dz-title">Drop your images here</p>
+              <p class="dz-sub">or <u>click to browse</u></p>
+              <p class="dz-hint">JPG, PNG, WebP · up to {{ max_files }} images · {{ max_file_mb }} MB each</p>
+              <input id="file-input" type="file" name="images" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" multiple>
+            </div>
+
+            <ul id="client-errors" class="error-list" aria-live="polite" hidden></ul>
+            {% if form.images.errors %}
+              <ul class="error-list">{% for error in form.images.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+            {% endif %}
+
+            <div id="selection" class="selection" hidden>
+              <div class="selection-head">
+                <span id="selection-summary"></span>
+                <button type="button" id="clear-all" class="btn btn-ghost btn-sm">Clear all</button>
+              </div>
+              <ul id="previews" class="previews"></ul>
+            </div>
+          </div>
+
+          <div class="settings">
+            <h3 class="settings-title"><svg class="icon" aria-hidden="true"><use href="#i-sliders"/></svg> Optimization settings</h3>
+
+            <div class="field">
+              <div class="field-head">
+                <label class="field-label" for="id_quality">Quality</label>
+                <output id="quality-value" for="id_quality" class="value-pill">{{ form.quality.value|default:default_quality }}</output>
+              </div>
+              <input type="range" class="range" id="id_quality" name="quality" min="10" max="100" step="1" value="{{ form.quality.value|default:default_quality }}">
+              <div class="range-scale"><span>10 · smallest</span><span>100 · best</span></div>
+              <p id="quality-note" class="hint" hidden>PNG is lossless, so quality doesn't change PNG output. Choose JPG or WebP for stronger compression.</p>
+              {% for error in form.quality.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+            </div>
+
+            <div class="field" role="radiogroup" aria-labelledby="format-label">
+              <span class="field-label" id="format-label">Output format</span>
+              <div class="segmented">
+                {% for value, label in form.fields.output_format.choices %}
+                  <label>
+                    <input type="radio" name="output_format" value="{{ value }}" {% if form.output_format.value == value %}checked{% endif %}>
+                    <span>{% if value == "original" %}Original{% else %}{{ label }}{% endif %}</span>
+                  </label>
+                {% endfor %}
+              </div>
+              <p class="hint">Original keeps each image's own format.</p>
+              <p id="jpg-note" class="hint" hidden>Transparent areas become white when saving as JPG.</p>
+            </div>
+
+            <div class="field">
+              <span class="field-label">Resize <span class="muted">(optional)</span></span>
+              <div class="size-inputs">
+                <div>
+                  <label class="input-label" for="id_width">Width</label>
+                  <div class="input-wrap">
+                    <input type="number" class="input" id="id_width" name="width" min="1" max="20000" inputmode="numeric" placeholder="Auto" value="{{ form.width.value|default_if_none:'' }}">
+                    <span class="input-suffix">px</span>
+                  </div>
+                </div>
+                <div>
+                  <label class="input-label" for="id_height">Height</label>
+                  <div class="input-wrap">
+                    <input type="number" class="input" id="id_height" name="height" min="1" max="20000" inputmode="numeric" placeholder="Auto" value="{{ form.height.value|default_if_none:'' }}">
+                    <span class="input-suffix">px</span>
+                  </div>
+                </div>
+              </div>
+              {% for error in form.width.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+              {% for error in form.height.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+              <label class="switch">
+                <input type="checkbox" name="preserve_aspect_ratio" id="id_preserve" {% if form.preserve_aspect_ratio.value %}checked{% endif %}>
+                <span class="switch-track" aria-hidden="true"></span>
+                <span>Preserve aspect ratio</span>
+              </label>
+              <p class="hint">Leave empty to keep the original size. Images are never enlarged.</p>
+            </div>
+
+            <button type="submit" id="submit-btn" class="btn btn-primary btn-lg btn-block" disabled>
+              <span class="spinner" aria-hidden="true"></span>
+              <span id="submit-label">Optimize images</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
 </section>
 
-<form id="optimize-form" class="optimizer" method="post" enctype="multipart/form-data" novalidate
-      data-max-files="{{ max_files }}" data-max-bytes="{{ max_file_bytes }}">
-  {% csrf_token %}
-
-  {% if form.non_field_errors %}
-    <div class="alert alert-error">{{ form.non_field_errors }}</div>
-  {% endif %}
-
-  <div class="card">
-    <div id="dropzone" class="dropzone {% if form.images.errors %}has-error{% endif %}" tabindex="0" role="button"
-         aria-label="Choose images or drop them here">
-      <svg class="dz-icon" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4m0 0l-4 4m4-4l4 4"/><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-      <p class="dz-title"><strong>Drag &amp; drop images here</strong> or <span class="link">browse files</span></p>
-      <p class="dz-hint">JPG, PNG or WebP · max {{ max_file_mb }} MB each · up to {{ max_files }} images</p>
-      <input id="file-input" type="file" name="images" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" multiple>
-    </div>
-
-    <ul id="client-errors" class="error-list" aria-live="polite" hidden></ul>
-    {% if form.images.errors %}
-      <ul class="error-list">{% for error in form.images.errors %}<li>{{ error }}</li>{% endfor %}</ul>
-    {% endif %}
-
-    <div id="selection" class="selection" hidden>
-      <div class="selection-head">
-        <span id="selection-summary"></span>
-        <button type="button" id="clear-all" class="btn btn-ghost btn-sm">Clear all</button>
+{# ---------- See the difference (static demo) ---------- #}
+<section class="section" aria-labelledby="diff-title">
+  <div class="container">
+    <div class="compare-band">
+      <div class="section-head">
+        <p class="eyebrow">Same picture, lighter file</p>
+        <h2 id="diff-title" style="margin-top:10px">See the difference</h2>
+        <p>Smart compression removes the weight you can't see. The result looks the same, and loads much faster.</p>
       </div>
-      <ul id="previews" class="previews"></ul>
-    </div>
-  </div>
-
-  <div class="card settings">
-    <h2>Optimization settings</h2>
-
-    <div class="field">
-      <div class="field-row">
-        <label for="id_quality">Quality</label>
-        <output id="quality-value" for="id_quality" class="quality-value">{{ form.quality.value|default:default_quality }}</output>
-      </div>
-      <input type="range" id="id_quality" name="quality" min="10" max="100" step="1" value="{{ form.quality.value|default:default_quality }}">
-      <div class="range-scale"><span>10 · smallest</span><span>100 · best</span></div>
-      <p id="quality-note" class="hint" hidden>PNG is lossless, so quality doesn't change PNG output. Choose JPG or WebP for stronger compression.</p>
-      {% for error in form.quality.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
-    </div>
-
-    <div class="grid-2">
-      <div class="field">
-        <label for="id_output_format">Output format</label>
-        <select id="id_output_format" name="output_format">
-          {% for value, label in form.fields.output_format.choices %}
-            <option value="{{ value }}" {% if form.output_format.value == value %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-        <p id="jpg-note" class="hint" hidden>Transparent areas become white when saving as JPG.</p>
-      </div>
-
-      <div class="field">
-        <span class="label">Resize <span class="muted">(optional)</span></span>
-        <div class="size-inputs">
-          <div>
-            <input type="number" id="id_width" name="width" min="1" max="20000" inputmode="numeric" placeholder="Width" aria-label="Width in pixels" value="{{ form.width.value|default_if_none:'' }}">
-          </div>
-          <span class="times" aria-hidden="true">×</span>
-          <div>
-            <input type="number" id="id_height" name="height" min="1" max="20000" inputmode="numeric" placeholder="Height" aria-label="Height in pixels" value="{{ form.height.value|default_if_none:'' }}">
-          </div>
-          <span class="unit">px</span>
+      <div class="compare-grid">
+        <div class="cmp-pair">
+          <figure class="cmp-card">
+            <img src="{% static 'optimizer/img/landscape-original.jpg' %}" alt="Sample landscape, original JPG" width="1400" height="900" loading="lazy">
+            <span class="cmp-label">Original</span>
+            <span class="cmp-size">966 KB</span>
+          </figure>
+          <span class="cmp-arrow" aria-hidden="true"><svg class="icon"><use href="#i-arrow"/></svg></span>
+          <figure class="cmp-card">
+            <img src="{% static 'optimizer/img/landscape-optimized.webp' %}" alt="Sample landscape, optimized WebP" width="1400" height="900" loading="lazy">
+            <span class="cmp-label">Optimized</span>
+            <span class="cmp-size mint">191 KB</span>
+          </figure>
         </div>
-        {% for error in form.width.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
-        {% for error in form.height.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
-        <label class="check">
-          <input type="checkbox" name="preserve_aspect_ratio" id="id_preserve" {% if form.preserve_aspect_ratio.value %}checked{% endif %}>
-          <span>Preserve aspect ratio</span>
-        </label>
-        <p class="hint">Leave empty to keep the original size. Images are never enlarged.</p>
+        <aside class="cmp-stat" aria-label="Sample reduction">
+          <span class="leaf" aria-hidden="true"><svg class="icon"><use href="#i-leaf"/></svg></span>
+          <p class="big">80<small>%</small></p>
+          <p class="label">smaller file size</p>
+          <span class="rule"></span>
+          <p class="note"><svg class="icon" aria-hidden="true"><use href="#i-image"/></svg> Looks the same, loads faster.</p>
+        </aside>
       </div>
+      <p class="compare-foot">Illustrative sample: a generated 1400×900 image, JPG at 96% quality vs. WebP at quality 62. Your results depend on your images and settings.</p>
     </div>
   </div>
+</section>
 
-  <div class="actions">
-    <button type="submit" id="submit-btn" class="btn btn-primary btn-lg" disabled>
-      <span class="spinner" aria-hidden="true"></span>
-      <span id="submit-label">Optimize images</span>
-    </button>
+{# ---------- How it works ---------- #}
+<section class="section" id="how-it-works" aria-labelledby="how-title">
+  <div class="container">
+    <div class="section-head center">
+      <p class="eyebrow">Three simple steps</p>
+      <h2 id="how-title" style="margin-top:10px">How it works</h2>
+      <p>No sign-up, no fuss. Drop your files in and take the lighter ones out.</p>
+    </div>
+    <div class="steps">
+      <article class="step">
+        <span class="step-num">01</span>
+        <span class="step-icon" aria-hidden="true"><svg class="icon"><use href="#i-upload"/></svg></span>
+        <h3>Upload</h3>
+        <p>Drag &amp; drop up to {{ max_files }} JPG, PNG or WebP images, {{ max_file_mb }} MB each, or browse for them.</p>
+      </article>
+      <article class="step">
+        <span class="step-num">02</span>
+        <span class="step-icon" aria-hidden="true"><svg class="icon"><use href="#i-sliders"/></svg></span>
+        <h3>Optimize</h3>
+        <p>Pick the quality, size and format. PixelMint processes everything with Pillow and shows the real savings.</p>
+      </article>
+      <article class="step">
+        <span class="step-num">03</span>
+        <span class="step-icon" aria-hidden="true"><svg class="icon"><use href="#i-download"/></svg></span>
+        <h3>Download</h3>
+        <p>Save each image on its own or grab the whole batch as a single ZIP. Everything is kept in your history.</p>
+      </article>
+    </div>
   </div>
-</form>
+</section>
 {% endblock %}
 
 {% block scripts %}
-<script src="{% static 'optimizer/app.js' %}" defer></script>
+<script src="{% static 'optimizer/js/app.js' %}" defer></script>
 {% endblock %}

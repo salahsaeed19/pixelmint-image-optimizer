@@ -1,4 +1,4 @@
-/* Image Optimizer — upload UI (vanilla JS, no dependencies). */
+/* PixelMint — upload UI (vanilla JS, no dependencies). */
 (function () {
   "use strict";
 
@@ -22,7 +22,7 @@
   var qualityValue = document.getElementById("quality-value");
   var qualityNote = document.getElementById("quality-note");
   var jpgNote = document.getElementById("jpg-note");
-  var formatSelect = document.getElementById("id_output_format");
+  var formatRadios = form.querySelectorAll('input[name="output_format"]');
 
   var files = []; // File objects currently selected
 
@@ -183,19 +183,28 @@
   });
 
   // --- Settings --------------------------------------------------------------
+  function currentFormat() {
+    var checked = form.querySelector('input[name="output_format"]:checked');
+    return checked ? checked.value : "original";
+  }
   function updateSettings() {
     qualityValue.textContent = quality.value;
-    qualityNote.hidden = formatSelect.value !== "png";
-    jpgNote.hidden = formatSelect.value !== "jpg";
+    var min = parseFloat(quality.min), max = parseFloat(quality.max);
+    quality.style.setProperty("--pct", ((quality.value - min) / (max - min) * 100) + "%");
+    qualityNote.hidden = currentFormat() !== "png";
+    jpgNote.hidden = currentFormat() !== "jpg";
   }
   quality.addEventListener("input", updateSettings);
-  formatSelect.addEventListener("change", updateSettings);
+  Array.prototype.forEach.call(formatRadios, function (radio) {
+    radio.addEventListener("change", updateSettings);
+  });
 
   // --- Submit ----------------------------------------------------------------
   function setLoading(isLoading) {
     submitBtn.classList.toggle("is-loading", isLoading);
     submitBtn.disabled = isLoading || files.length === 0;
     submitLabel.textContent = isLoading ? "Optimizing…" : "Optimize images";
+    form.classList.toggle("is-busy", isLoading);
     form.setAttribute("aria-busy", isLoading ? "true" : "false");
   }
 
@@ -224,3 +233,4 @@
   updateSettings();
   render();
 })();
+

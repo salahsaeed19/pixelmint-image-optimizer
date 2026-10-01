@@ -1,4 +1,4 @@
-﻿"""Orchestrates optimizing a batch of uploads and recording history."""
+"""Orchestrates optimizing a batch of uploads and recording history."""
 
 from __future__ import annotations
 

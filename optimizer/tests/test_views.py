@@ -26,12 +26,47 @@ class PageTests(MediaTestCase):
     def test_home_page(self):
         response = self.client.get(reverse("optimizer:home"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Drag &amp; drop")
+        self.assertContains(response, "Drop your images here")
+        self.assertContains(response, "click to browse")
         self.assertContains(response, "csrfmiddlewaretoken")
         self.assertContains(response, 'value="80"')  # default quality
-        self.assertContains(response, "Image Optimizer — Built with Django &amp; Pillow")
+        self.assertContains(response, "Built with Django &amp; Pillow")
         self.assertContains(response, ">Home<")
+        self.assertContains(response, ">How it works<")
         self.assertContains(response, ">History<")
+        self.assertContains(response, "Clean images.")
+        self.assertContains(response, "See the difference")
+        for step in ("Upload", "Optimize", "Download"):
+            self.assertContains(response, f"<h3>{step}</h3>")
+
+    def test_brand_is_pixelmint_everywhere(self):
+        for name in ("home", "history"):
+            response = self.client.get(reverse(f"optimizer:{name}"))
+            self.assertContains(response, "<title>")
+            self.assertContains(response, "PixelMint")
+            self.assertNotContains(response, "Image Optimizer")
+
+    def test_output_format_choices_are_rendered(self):
+        response = self.client.get(reverse("optimizer:home"))
+        for value in ("original", "jpg", "png", "webp"):
+            self.assertContains(response, f'name="output_format" value="{value}"')
+        self.assertContains(response, 'value="original" checked')
+
+    def test_every_referenced_static_asset_exists(self):
+        import re
+
+        from django.contrib.staticfiles import finders
+
+        paths = set()
+        for name in ("home", "history"):
+            html = self.client.get(reverse(f"optimizer:{name}")).content.decode()
+            paths.update(re.findall(r'/static/([^"\']+)', html))
+        self.assertTrue({"optimizer/css/base.css", "optimizer/js/app.js"} <= paths)
+        for path in paths:
+            self.assertIsNotNone(finders.find(path), path)
+        # Files only referenced from CSS.
+        self.assertIsNotNone(finders.find("optimizer/fonts/manrope-latin-wght-normal.woff2"))
+        self.assertIsNotNone(finders.find("optimizer/fonts/manrope-latin-ext-wght-normal.woff2"))
 
     def test_empty_history_page(self):
         response = self.client.get(reverse("optimizer:history"))
@@ -45,6 +80,27 @@ class PageTests(MediaTestCase):
             self.assertContains(response, "Page not found", status_code=404)
             missing = reverse("optimizer:download", args=["00000000-0000-0000-0000-000000000000"])
             self.assertEqual(self.client.get(missing).status_code, 404)
+
+
+class SourceEncodingTests(MediaTestCase):
+    def test_templates_and_static_files_are_clean_utf8(self):
+        """Guards against mojibake (e.g. 'â€¦') and stray BOMs in front-end files."""
+        from pathlib import Path
+
+        root = Path(__file__).resolve().parent.parent
+        mojibake = ("\u00e2\u20ac", "\u00c2\u00b7", "\u00c3\u2014")
+        checked = 0
+        for folder in ("templates", "static"):
+            for path in (root / folder).rglob("*"):
+                if path.suffix not in {".html", ".css", ".js"}:
+                    continue
+                raw = path.read_bytes()
+                self.assertFalse(raw.startswith(b"\xef\xbb\xbf"), f"BOM in {path.name}")
+                text = raw.decode("utf-8")
+                for bad in mojibake:
+                    self.assertNotIn(bad, text, f"mojibake in {path.name}")
+                checked += 1
+        self.assertGreaterEqual(checked, 8)
 
 
 class OptimizeFlowTests(MediaTestCase):

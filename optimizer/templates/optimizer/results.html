@@ -1,72 +1,80 @@
 {% extends "optimizer/base.html" %}
-{% block title %}Results{% endblock %}
+{% block title %}Your results{% endblock %}
 
 {% block content %}
-<section class="page-head">
-  <div>
-    <h1>Optimization results</h1>
-    <p class="muted">{{ records|length }} image{{ records|length|pluralize }} processed.</p>
-  </div>
-  <div class="head-actions">
-    {% if records|length > 1 %}
-      <a class="btn btn-primary" href="{% url 'optimizer:download_zip' batch_id %}">Download all (ZIP)</a>
-    {% endif %}
-    <a class="btn btn-secondary" href="{% url 'optimizer:home' %}">Optimize more</a>
-  </div>
-</section>
+<div class="container page">
+  <section class="page-head">
+    <div>
+      <p class="eyebrow">Results</p>
+      <h1>{% if total_is_larger %}Here are your results.{% else %}Your images just got lighter.{% endif %}</h1>
+      <p>{{ records|length }} image{{ records|length|pluralize }} processed. Preview, compare and download below.</p>
+    </div>
+    <div class="head-actions">
+      {% if records|length > 1 %}
+        <a class="btn btn-primary" href="{% url 'optimizer:download_zip' batch_id %}"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg> Download all (ZIP)</a>
+      {% endif %}
+      <a class="btn btn-secondary" href="{% url 'optimizer:home' %}#tool">Optimize more</a>
+    </div>
+  </section>
 
-<section class="summary" aria-label="Batch summary">
-  <div class="summary-item"><span class="summary-label">Original total</span><span class="summary-value">{{ total_original|filesizeformat }}</span></div>
-  <div class="summary-item"><span class="summary-label">Optimized total</span><span class="summary-value">{{ total_optimized|filesizeformat }}</span></div>
-  <div class="summary-item {% if total_is_larger %}is-warn{% else %}is-good{% endif %}">
-    <span class="summary-label">{% if total_is_larger %}Increase{% else %}Saved{% endif %}</span>
-    <span class="summary-value">{{ total_saved|filesizeformat }} <small>({{ total_percent|floatformat:1 }}%)</small></span>
-  </div>
-</section>
+  <section class="summary" aria-label="Batch summary">
+    <div class="summary-item"><span class="summary-label">Original total</span><span class="summary-value">{{ total_original|filesizeformat }}</span></div>
+    <div class="summary-item"><span class="summary-label">Optimized total</span><span class="summary-value">{{ total_optimized|filesizeformat }}</span></div>
+    <div class="summary-item {% if total_is_larger %}is-warn{% else %}is-good{% endif %}">
+      <span class="summary-label">{% if total_is_larger %}Increase{% else %}Saved{% endif %}</span>
+      <span class="summary-value">{{ total_saved|filesizeformat }} <small>({{ total_percent|floatformat:1 }}%)</small></span>
+    </div>
+  </section>
 
-<div class="results">
-  {% for record in records %}
-  <article class="card result">
-    <header class="result-head">
-      <div class="result-title">
-        <h2 title="{{ record.original_filename }}">{{ record.original_filename }}</h2>
-        <p class="muted">{{ record.get_original_format_display }} → {{ record.get_output_format_display }} · quality {{ record.quality }}</p>
+  <div class="results">
+    {% for record in records %}
+    <article class="card result">
+      <header class="result-head">
+        <div class="result-title">
+          <h2 title="{{ record.original_filename }}">{{ record.original_filename }}</h2>
+          <p class="muted">{{ record.get_original_format_display }} → {{ record.get_output_format_display }} · quality {{ record.quality }}</p>
+        </div>
+        {% include "optimizer/_stats.html" %}
+      </header>
+
+      <div class="result-body">
+        <div class="compare">
+          <figure>
+            <div class="thumb"><img src="{{ record.original_file.url }}" alt="Original {{ record.original_filename }}" loading="lazy"></div>
+            <figcaption>
+              <strong>Original</strong>
+              <span>{{ record.original_width }} × {{ record.original_height }} px</span>
+              <span>{{ record.original_size|filesizeformat }}</span>
+            </figcaption>
+          </figure>
+          <figure>
+            <div class="thumb"><img src="{{ record.optimized_file.url }}" alt="Optimized {{ record.original_filename }}" loading="lazy"></div>
+            <figcaption>
+              <strong>Optimized</strong>
+              <span>{{ record.output_width }} × {{ record.output_height }} px</span>
+              <span>{{ record.optimized_size|filesizeformat }}</span>
+            </figcaption>
+          </figure>
+        </div>
+
+        <div class="result-side">
+          <div>
+            {% if record.is_larger %}
+              <p class="big-stat is-warn">+{{ record.reduction_percent_abs|floatformat:1 }}<small>%</small></p>
+              <p class="saved is-warn">Larger by <strong>{{ record.saved_bytes_abs|filesizeformat }}</strong>. Try a lower quality, a smaller size, or JPG/WebP output.</p>
+            {% elif record.saved_bytes == 0 %}
+              <p class="big-stat">0<small>%</small></p>
+              <p class="saved">Same size as the original.</p>
+            {% else %}
+              <p class="big-stat">−{{ record.reduction_percent_abs|floatformat:1 }}<small>%</small></p>
+              <p class="saved">Saved <strong>{{ record.saved_bytes_abs|filesizeformat }}</strong> ({{ record.reduction_percent_abs|floatformat:1 }}%)</p>
+            {% endif %}
+          </div>
+          <a class="btn btn-primary btn-block" href="{% url 'optimizer:download' record.pk %}"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg> Download</a>
+        </div>
       </div>
-      {% include "optimizer/_stats.html" %}
-    </header>
-
-    <div class="compare">
-      <figure>
-        <div class="thumb"><img src="{{ record.original_file.url }}" alt="Original {{ record.original_filename }}" loading="lazy"></div>
-        <figcaption>
-          <strong>Original</strong>
-          <span>{{ record.original_width }} × {{ record.original_height }} px</span>
-          <span>{{ record.original_size|filesizeformat }}</span>
-        </figcaption>
-      </figure>
-      <figure>
-        <div class="thumb"><img src="{{ record.optimized_file.url }}" alt="Optimized {{ record.original_filename }}" loading="lazy"></div>
-        <figcaption>
-          <strong>Optimized</strong>
-          <span>{{ record.output_width }} × {{ record.output_height }} px</span>
-          <span>{{ record.optimized_size|filesizeformat }}</span>
-        </figcaption>
-      </figure>
-    </div>
-
-    <div class="result-foot">
-      <p class="saved {% if record.is_larger %}is-warn{% endif %}">
-        {% if record.is_larger %}
-          Larger by <strong>{{ record.saved_bytes_abs|filesizeformat }}</strong> ({{ record.reduction_percent_abs|floatformat:1 }}%). Try a lower quality, a smaller size, or JPG/WebP output.
-        {% elif record.saved_bytes == 0 %}
-          Same size as the original.
-        {% else %}
-          Saved <strong>{{ record.saved_bytes_abs|filesizeformat }}</strong> ({{ record.reduction_percent_abs|floatformat:1 }}%)
-        {% endif %}
-      </p>
-      <a class="btn btn-secondary btn-sm" href="{% url 'optimizer:download' record.pk %}">Download</a>
-    </div>
-  </article>
-  {% endfor %}
+    </article>
+    {% endfor %}
+  </div>
 </div>
 {% endblock %}

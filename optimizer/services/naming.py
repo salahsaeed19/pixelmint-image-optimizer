@@ -1,4 +1,4 @@
-﻿"""Filename helpers. Uploaded names are only ever used for display/downloads."""
+"""Filename helpers. Uploaded names are only ever used for display/downloads."""
 
 import re
 import uuid

@@ -4,6 +4,11 @@ from django.utils.html import format_html
 from .models import OptimizationRecord
 
 
+admin.site.site_header = "PixelMint administration"
+admin.site.site_title = "PixelMint admin"
+admin.site.index_title = "Optimization history"
+
+
 @admin.register(OptimizationRecord)
 class OptimizationRecordAdmin(admin.ModelAdmin):
     date_hierarchy = "created_at"

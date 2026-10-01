@@ -2,10 +2,12 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
-<div class="card empty">
-  <p class="error-code">{{ status }}</p>
-  <h1>{{ title }}</h1>
-  <p class="muted">{{ message }}</p>
-  <a class="btn btn-primary" href="{% url 'optimizer:home' %}">Back to home</a>
+<div class="container page">
+  <div class="card empty">
+    <p class="error-code">{{ status }}</p>
+    <h1 style="font-size:clamp(1.6rem,2vw+1rem,2.2rem)">{{ title }}</h1>
+    <p class="muted">{{ message }}</p>
+    <a class="btn btn-primary" href="{% url 'optimizer:home' %}">Back to home</a>
+  </div>
 </div>
 {% endblock %}

@@ -3,40 +3,90 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Image Optimizer{% endblock %} · Image Optimizer</title>
-  <meta name="description" content="Compress, resize and convert JPG, PNG and WebP images.">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234f46e5'/%3E%3Cpath d='M9 21l5-6 4 4 2-2 3 4z' fill='white'/%3E%3Ccircle cx='21' cy='11' r='2.2' fill='white'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="{% static 'optimizer/styles.css' %}">
+  <title>{% block title %}Clean images. Smaller files.{% endblock %} · PixelMint</title>
+  <meta name="description" content="PixelMint optimizes JPG, PNG and WebP images for the web while preserving visual quality.">
+  <meta name="theme-color" content="#f8fbfa">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='10' fill='%2359c9a5'/%3E%3Cpath d='M9 23c0-8 5-13 14-14 0 9-5 14-13 14z' fill='white'/%3E%3C/svg%3E">
+  <link rel="preload" href="{% static 'optimizer/fonts/manrope-latin-wght-normal.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{% static 'optimizer/css/base.css' %}">
+  <link rel="stylesheet" href="{% static 'optimizer/css/components.css' %}">
+  <link rel="stylesheet" href="{% static 'optimizer/css/pages.css' %}">
 </head>
 <body>
+  {# Icon sprite: <svg class="icon"><use href="#i-name"/></svg> #}
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></symbol>
+      <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 13v8"/><path d="M4 14.9A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 2.5 8.24"/><path d="m8 17 4-4 4 4"/></symbol>
+      <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M21 4h-7"/><path d="M10 4H3"/><path d="M21 12h-9"/><path d="M8 12H3"/><path d="M21 20h-5"/><path d="M12 20H3"/><path d="M14 2v4"/><path d="M8 10v4"/><path d="M16 18v4"/></symbol>
+      <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></symbol>
+      <symbol id="i-image" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/></symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    </defs>
+  </svg>
+
   <header class="site-header">
     <div class="container header-inner">
-      <a class="brand" href="{% url 'optimizer:home' %}">
-        <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="1.5"/><path d="M21 16l-5-5-8 8"/></svg>
-        </span>
-        Image Optimizer
+      <a class="brand" href="{% url 'optimizer:home' %}" aria-label="PixelMint home">
+        <span class="brand-mark" aria-hidden="true"><svg class="icon"><use href="#i-leaf"/></svg></span>
+        <span>Pixel<span>Mint</span></span>
       </a>
       <nav class="nav" aria-label="Main">
         <a href="{% url 'optimizer:home' %}" {% if request.resolver_match.url_name == 'home' %}class="active" aria-current="page"{% endif %}>Home</a>
+        <a href="{% url 'optimizer:home' %}#how-it-works">How it works</a>
         <a href="{% url 'optimizer:history' %}" {% if request.resolver_match.url_name == 'history' %}class="active" aria-current="page"{% endif %}>History</a>
       </nav>
+      <a class="btn btn-primary btn-sm header-action" href="{% url 'optimizer:home' %}#tool">Open tool</a>
     </div>
   </header>
 
-  <main class="container main">
+  <main class="main" id="main">
     {% if messages %}
-      <div class="messages" role="status">
-        {% for message in messages %}
-          <div class="alert alert-{{ message.level_tag }}">{{ message }}</div>
-        {% endfor %}
+      <div class="container">
+        <div class="messages" role="status">
+          {% for message in messages %}
+            <div class="alert alert-{{ message.level_tag }}">{{ message }}</div>
+          {% endfor %}
+        </div>
       </div>
     {% endif %}
     {% block content %}{% endblock %}
   </main>
 
   <footer class="site-footer">
-    <div class="container">Image Optimizer — Built with Django &amp; Pillow</div>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a class="brand" href="{% url 'optimizer:home' %}">
+            <span class="brand-mark" aria-hidden="true"><svg class="icon"><use href="#i-leaf"/></svg></span>
+            <span>Pixel<span>Mint</span></span>
+          </a>
+          <p>Lighter images. Brighter webs. PixelMint compresses, resizes and converts your images while keeping them looking their best.</p>
+        </div>
+        <div class="footer-col">
+          <h3>Explore</h3>
+          <ul>
+            <li><a href="{% url 'optimizer:home' %}">Home</a></li>
+            <li><a href="{% url 'optimizer:home' %}#how-it-works">How it works</a></li>
+            <li><a href="{% url 'optimizer:history' %}">History</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h3>Formats</h3>
+          <ul>
+            <li>JPG &amp; JPEG</li>
+            <li>PNG</li>
+            <li>WebP</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© {% now "Y" %} PixelMint</span>
+        <span>Built with Django &amp; Pillow</span>
+      </div>
+    </div>
   </footer>
   {% block scripts %}{% endblock %}
 </body>

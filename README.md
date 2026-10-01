@@ -1,6 +1,10 @@
-# Image Optimizer
+# PixelMint
 
-A small, self-hosted Django web app for compressing, resizing and converting images. Upload one or many JPG, PNG or WebP files, tune the settings, and download the optimized results individually or as a ZIP. Every run is recorded in a persistent history.
+*Clean images. Smaller files.* PixelMint is a small, self-hosted Django web app for compressing, resizing and converting images (formerly "Image Optimizer"). Upload one or many JPG, PNG or WebP files, tune the settings, and download the optimized results individually or as a ZIP. Every run is recorded in a persistent history.
+
+## Design
+
+A calm, premium landing-page style: soft off-white surfaces, a mint accent, Manrope typography, rounded cards and a few gentle CSS animations (floating hero cards, drifting leaves). Animations are disabled automatically for visitors who prefer reduced motion. The "See the difference" and hero visuals are static demo images (966 KB JPG vs. 191 KB WebP); all numbers on the results and history pages are real.
 
 ## Features
 
@@ -75,9 +79,14 @@ optimizer/
     image_processing.py     Pure Pillow logic (validate, orient, resize, convert, encode)
     batch.py                Processes a batch, saves files and history rows
     naming.py               Safe/UUID filenames
-  templates/optimizer/      Django templates
-  static/optimizer/         styles.css, app.js
+  templates/optimizer/      Django templates (base, home, results, history, error)
+  static/optimizer/
+    css/                    base.css (tokens, layout), components.css, pages.css
+    js/app.js               Drag & drop, previews, validation, loading state
+    fonts/                  Self-hosted Manrope (SIL Open Font License)
+    img/                    Generated demo images for the landing visuals
   tests/                    Unit and integration tests
+tools/generate_demo_assets.py   Regenerates the demo images with Pillow
 media/                      Created at runtime: originals/ and optimized/ (git-ignored)
 ```
 
